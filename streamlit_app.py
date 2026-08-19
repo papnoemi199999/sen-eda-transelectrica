@@ -10,10 +10,11 @@ DATE_COLUMN = "Data"
 SOLAR_COLUMN = "Foto[MW]"
 WIND_COLUMN = "Eolian[MW]"
 PRODUCTION_COLUMN = "Productie[MW]"
+CONSUMPTION_COLUMN = "Consum[MW]"
 SHARE_COLUMN = "Pondere regenerabile (%)"
 
-CHART_SERIES = ["Solar", "Eolian", "Producție totală"]
-CHART_COLORS = ["#F2C94C", "#2F80ED", "#219653"]
+CHART_SERIES = ["Solar", "Eolian", "Producție totală", "Consum"]
+CHART_COLORS = ["#F2C94C", "#2F80ED", "#219653", "#EB5757"]
 
 SEASON_COLUMN = "Sezon"
 HOUR_COLUMN = "Ora"
@@ -148,6 +149,144 @@ def calculate_seasonal_hourly_share(data: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def create_daily_profile_chart(
+    daily_data: pd.DataFrame,
+    show_total_production: bool,
+    show_consumption: bool,
+    y_axis_max: float,
+) -> alt.Chart:
+    """Create the daily production and optional consumption chart."""
+    chart_columns = [SOLAR_COLUMN, WIND_COLUMN]
+    if show_total_production:
+        chart_columns.append(PRODUCTION_COLUMN)
+    if show_consumption:
+        chart_columns.append(CONSUMPTION_COLUMN)
+
+    chart_data = daily_data[[DATE_COLUMN, *chart_columns]].rename(
+        columns={
+            SOLAR_COLUMN: "Solar",
+            WIND_COLUMN: "Eolian",
+            PRODUCTION_COLUMN: "Producție totală",
+            CONSUMPTION_COLUMN: "Consum",
+        }
+    )
+    chart_data = chart_data.melt(
+        id_vars=DATE_COLUMN,
+        var_name="Sursă",
+        value_name="Putere (MW)",
+    )
+
+    return (
+        alt.Chart(chart_data)
+        .mark_line(
+            strokeWidth=3,
+            point=alt.OverlayMarkDef(filled=True, size=45),
+        )
+        .encode(
+            x=alt.X(f"{DATE_COLUMN}:T", title="Ora"),
+            y=alt.Y(
+                "Putere (MW):Q",
+                title="Putere (MW)",
+                scale=alt.Scale(domain=[0, y_axis_max]),
+            ),
+            color=alt.Color(
+                "Sursă:N",
+                title="Sursă",
+                scale=alt.Scale(
+                    domain=CHART_SERIES,
+                    range=CHART_COLORS,
+                ),
+            ),
+            tooltip=[
+                alt.Tooltip(f"{DATE_COLUMN}:T", title="Ora", format="%H:%M"),
+                alt.Tooltip("Sursă:N", title="Sursă"),
+                alt.Tooltip("Putere (MW):Q", title="Putere", format=",.0f"),
+            ],
+        )
+        .properties(height=500)
+    )
+
+
+def create_hourly_share_chart(hourly_share: pd.DataFrame) -> alt.Chart:
+    """Create the hourly solar and wind share chart for one day."""
+    return (
+        alt.Chart(hourly_share)
+        .mark_line(
+            color="#9B51E0",
+            strokeWidth=3,
+            point=alt.OverlayMarkDef(
+                color="#9B51E0",
+                filled=True,
+                size=80,
+            ),
+        )
+        .encode(
+            x=alt.X(
+                f"{DATE_COLUMN}:T",
+                title="Ora",
+                axis=alt.Axis(format="%H:%M", labelAngle=0),
+            ),
+            y=alt.Y(
+                f"{SHARE_COLUMN}:Q",
+                title="Pondere (%)",
+                scale=alt.Scale(domain=[0, 100]),
+            ),
+            tooltip=[
+                alt.Tooltip(f"{DATE_COLUMN}:T", title="Ora", format="%H:%M"),
+                alt.Tooltip(
+                    f"{SHARE_COLUMN}:Q",
+                    title="Pondere regenerabile",
+                    format=".1f",
+                ),
+            ],
+        )
+        .properties(height=400)
+    )
+
+
+def create_seasonal_share_chart(seasonal_share: pd.DataFrame) -> alt.Chart:
+    """Create the seasonal comparison of typical hourly renewable shares."""
+    return (
+        alt.Chart(seasonal_share)
+        .mark_line(
+            strokeWidth=3,
+            point=alt.OverlayMarkDef(filled=True, size=55),
+        )
+        .encode(
+            x=alt.X(
+                f"{HOUR_COLUMN}:Q",
+                title="Ora",
+                scale=alt.Scale(domain=[0, 23]),
+                axis=alt.Axis(values=list(range(24)), labelAngle=0),
+            ),
+            y=alt.Y(
+                f"{SHARE_COLUMN}:Q",
+                title="Pondere medie (%)",
+                scale=alt.Scale(domain=[0, 100]),
+            ),
+            color=alt.Color(
+                f"{SEASON_COLUMN}:N",
+                title="Anotimp",
+                scale=alt.Scale(
+                    domain=SEASON_ORDER,
+                    range=SEASON_COLORS,
+                ),
+            ),
+            order=alt.Order(f"{HOUR_COLUMN}:Q"),
+            tooltip=[
+                alt.Tooltip(f"{SEASON_COLUMN}:N", title="Anotimp"),
+                alt.Tooltip(f"{HOUR_COLUMN}:Q", title="Ora", format=".0f"),
+                alt.Tooltip(
+                    f"{SHARE_COLUMN}:Q",
+                    title="Pondere medie",
+                    format=".1f",
+                ),
+            ],
+        )
+        .properties(height=450)
+    )
+
+
 def main() -> None:
     st.set_page_config(
         page_title="SEN – Solar & Eolian",
@@ -172,7 +311,11 @@ def main() -> None:
         min_value=data[DATE_COLUMN].dt.date.min(),
         max_value=data[DATE_COLUMN].dt.date.max(),
     )
-    show_total_production = st.checkbox("Afișează producția totală")
+    option_columns = st.columns(2)
+    show_total_production = option_columns[0].checkbox(
+        "Afișează producția totală"
+    )
+    show_consumption = option_columns[1].checkbox("Afișează consumul")
 
     daily_data = get_daily_data(data, selected_date)
     if daily_data.empty:
@@ -217,59 +360,17 @@ def main() -> None:
         metrics["measurement_count"],
     )
 
-    chart_columns = [SOLAR_COLUMN, WIND_COLUMN]
-    if show_total_production:
-        chart_columns.append(PRODUCTION_COLUMN)
-
-    chart_data = daily_data[[DATE_COLUMN, *chart_columns]].rename(
-        columns={
-            SOLAR_COLUMN: "Solar",
-            WIND_COLUMN: "Eolian",
-            PRODUCTION_COLUMN: "Producție totală",
-        }
+    y_axis_max = (
+        data[[PRODUCTION_COLUMN, CONSUMPTION_COLUMN]].max().max() * 1.05
+    )
+    daily_profile_chart = create_daily_profile_chart(
+        daily_data,
+        show_total_production,
+        show_consumption,
+        y_axis_max,
     )
 
-    chart_data = chart_data.melt(
-        id_vars=DATE_COLUMN,
-        var_name="Sursă",
-        value_name="Putere (MW)",
-    )
-    y_axis_max = data[PRODUCTION_COLUMN].max() * 1.05
-
-    chart = (
-        alt.Chart(chart_data)
-        .mark_line(
-            strokeWidth=3,
-            point=alt.OverlayMarkDef(
-                filled=True,
-                size=45,
-            ),
-        )
-        .encode(
-            x=alt.X(f"{DATE_COLUMN}:T", title="Ora"),
-            y=alt.Y(
-                "Putere (MW):Q",
-                title="Putere (MW)",
-                scale=alt.Scale(domain=[0, y_axis_max]),
-            ),
-            color=alt.Color(
-                "Sursă:N",
-                title="Sursă",
-                scale=alt.Scale(
-                    domain=CHART_SERIES,
-                    range=CHART_COLORS,
-                ),
-            ),
-            tooltip=[
-                alt.Tooltip(f"{DATE_COLUMN}:T", title="Ora", format="%H:%M"),
-                alt.Tooltip("Sursă:N", title="Sursă"),
-                alt.Tooltip("Putere (MW):Q", title="Putere", format=",.0f"),
-            ],
-        )
-        .properties(height=500)
-    )
-
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(daily_profile_chart, use_container_width=True)
 
     st.subheader("Ponderea orară a producției solare și eoliene")
     st.markdown(
@@ -279,44 +380,12 @@ def main() -> None:
         "Producție totală medie orară × 100`"
     )
 
-    share_chart = (
-        alt.Chart(hourly_share)
-        .mark_line(
-            color="#9B51E0",
-            strokeWidth=3,
-            point=alt.OverlayMarkDef(
-                color="#9B51E0",
-                filled=True,
-                size=80,
-            ),
-        )
-        .encode(
-            x=alt.X(
-                f"{DATE_COLUMN}:T",
-                title="Ora",
-                axis=alt.Axis(format="%H:%M", labelAngle=0),
-            ),
-            y=alt.Y(
-                f"{SHARE_COLUMN}:Q",
-                title="Pondere (%)",
-                scale=alt.Scale(domain=[0, 100]),
-            ),
-            tooltip=[
-                alt.Tooltip(f"{DATE_COLUMN}:T", title="Ora", format="%H:%M"),
-                alt.Tooltip(
-                    f"{SHARE_COLUMN}:Q",
-                    title="Pondere regenerabile",
-                    format=".1f",
-                ),
-            ],
-        )
-        .properties(height=400)
-    )
+    hourly_share_chart = create_hourly_share_chart(hourly_share)
 
     share_chart_column, share_metric_column = st.columns([4, 1])
 
     with share_chart_column:
-        st.altair_chart(share_chart, use_container_width=True)
+        st.altair_chart(hourly_share_chart, use_container_width=True)
 
     with share_metric_column:
         st.metric(
@@ -334,50 +403,9 @@ def main() -> None:
         "regenerabile pentru un anotimp."
     )
 
-    seasonal_chart = (
-        alt.Chart(seasonal_share)
-        .mark_line(
-            strokeWidth=3,
-            point=alt.OverlayMarkDef(
-                filled=True,
-                size=55,
-            ),
-        )
-        .encode(
-            x=alt.X(
-                f"{HOUR_COLUMN}:Q",
-                title="Ora",
-                scale=alt.Scale(domain=[0, 23]),
-                axis=alt.Axis(values=list(range(24)), labelAngle=0),
-            ),
-            y=alt.Y(
-                f"{SHARE_COLUMN}:Q",
-                title="Pondere medie (%)",
-                scale=alt.Scale(domain=[0, 100]),
-            ),
-            color=alt.Color(
-                f"{SEASON_COLUMN}:N",
-                title="Anotimp",
-                scale=alt.Scale(
-                    domain=SEASON_ORDER,
-                    range=SEASON_COLORS,
-                ),
-            ),
-            order=alt.Order(f"{HOUR_COLUMN}:Q"),
-            tooltip=[
-                alt.Tooltip(f"{SEASON_COLUMN}:N", title="Anotimp"),
-                alt.Tooltip(f"{HOUR_COLUMN}:Q", title="Ora", format=".0f"),
-                alt.Tooltip(
-                    f"{SHARE_COLUMN}:Q",
-                    title="Pondere medie",
-                    format=".1f",
-                ),
-            ],
-        )
-        .properties(height=450)
-    )
+    seasonal_share_chart = create_seasonal_share_chart(seasonal_share)
 
-    st.altair_chart(seasonal_chart, use_container_width=True)
+    st.altair_chart(seasonal_share_chart, use_container_width=True)
 
 
 if __name__ == "__main__":
