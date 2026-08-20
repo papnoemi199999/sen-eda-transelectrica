@@ -238,6 +238,54 @@ def calculate_daily_renewable_share(hourly_data: pd.DataFrame) -> float:
     return renewable_production / total_production * 100
 
 
+def calculate_wind_solar_relationship(data: pd.DataFrame) -> dict:
+    """Measure whether hourly wind and solar production move together."""
+    hourly_data = (
+        data.set_index(DATE_COLUMN)[[SOLAR_COLUMN, WIND_COLUMN]]
+        .resample("1h")
+        .mean()
+        .dropna()
+    )
+
+    daily_data = (
+        data.set_index(DATE_COLUMN)[[SOLAR_COLUMN, WIND_COLUMN]]
+        .resample("1D")
+        .mean()
+        .dropna()
+    )
+
+
+    # Calculate the percentage of hours where both solar and wind production are above their respective 75th percentiles.
+    metrics = {
+        "hourly_correlation": hourly_data[SOLAR_COLUMN].corr(
+            hourly_data[WIND_COLUMN]
+        ),
+        "daily_correlation": daily_data[SOLAR_COLUMN].corr(
+            daily_data[WIND_COLUMN]
+        ),
+    }
+
+    return metrics
+
+
+def describe_wind_solar_relationship(correlation: float) -> str:
+    """Return a plain-language interpretation of a correlation value."""
+    strength = abs(correlation)
+    if strength < 0.2:
+        strength_text = "foarte slabă"
+    elif strength < 0.4:
+        strength_text = "slabă"
+    elif strength < 0.6:
+        strength_text = "moderată"
+    elif strength < 0.8:
+        strength_text = "puternică"
+    else:
+        strength_text = "foarte puternică"
+
+    direction = "negativă" if correlation < 0 else "pozitivă"
+    return f"{strength_text} și {direction}"
+
+
 def calculate_seasonal_hourly_share(data: pd.DataFrame) -> pd.DataFrame:
     """Calculate the typical hourly renewable share for each season."""
     seasonal_data = data[
@@ -555,6 +603,7 @@ def main() -> None:
     )
     daily_renewable_share = calculate_daily_renewable_share(hourly_share)
     seasonal_share = calculate_seasonal_hourly_share(data)
+    wind_solar_metrics = calculate_wind_solar_relationship(data)
 
     st.subheader(f"Profilul zilei de {selected_date:%d.%m.%Y}")
 
@@ -645,6 +694,70 @@ def main() -> None:
     seasonal_share_chart = create_seasonal_share_chart(seasonal_share)
 
     st.altair_chart(seasonal_share_chart, use_container_width=True)
+
+    st.subheader("Corelația dintre producția eoliană și cea solară")
+    st.write(
+        "Corelația Pearson arată dacă cele două surse tind să crească și "
+        "să scadă împreună. Valorile negative indică o tendință de "
+        "compensare, iar cele pozitive indică producție simultană."
+    )
+
+    relationship_metric_columns = st.columns(2)
+    relationship_metric_columns[0].metric(
+        "Corelație orară Pearson",
+        f"{wind_solar_metrics['hourly_correlation']:.2f}",
+    )
+    relationship_metric_columns[1].metric(
+        "Corelație între mediile zilnice",
+        f"{wind_solar_metrics['daily_correlation']:.2f}",
+    )
+
+    with st.expander("Cum au fost calculate și ce înseamnă valorile?"):
+        st.markdown(
+            """
+            **1. Corelația orară**
+
+            Măsurătorile originale au fost grupate pe intervale de o oră.
+            Pentru fiecare oră s-au calculat producția solară medie și
+            producția eoliană medie, apoi coeficientul de corelație Pearson
+            dintre cele două serii.
+
+            **2. Corelația între mediile zilnice**
+
+            Măsurătorile au fost grupate și pe zile. Pentru fiecare zi s-au
+            calculat mediile producției solare și eoliene, după care s-a
+            aplicat același coeficient Pearson.
+
+            **Formula Pearson**
+
+            ```text
+            r = Σ[(Solarᵢ − Solar̄)(Eolianᵢ − Eolian̄)]
+                ───────────────────────────────────────
+                √(Σ(Solarᵢ − Solar̄)² · Σ(Eolianᵢ − Eolian̄)²)
+            ```
+
+            **Interpretare:** `r` este cuprins între `−1` și `+1`.
+            O valoare negativă arată o tendință de compensare, o valoare
+            pozitivă arată că sursele tind să varieze în aceeași direcție,
+            iar o valoare apropiată de zero indică o relație slabă.
+
+            Corelația orară descrie compensarea pe termen scurt și este cea
+            mai relevantă pentru echilibrarea sistemului. Corelația zilnică
+            descrie relația dintre zile și poate reflecta inclusiv diferențe
+            meteorologice sau sezoniere.
+            """
+        )
+
+    hourly_relationship_text = describe_wind_solar_relationship(
+        wind_solar_metrics["hourly_correlation"]
+    )
+    st.info(
+        f"**Concluzie:** Corelația orară este {hourly_relationship_text} "
+        f"(r = {wind_solar_metrics['hourly_correlation']:.2f}). Solarul și "
+        "eolianul se compensează deci parțial, inclusiv prin profilurile "
+        "lor zilnice și sezoniere diferite, dar relația este prea slabă "
+        "pentru ca scăderea uneia să garanteze creșterea celeilalte."
+    )
 
     st.subheader("Acoperirea orară a consumului din surse regenerabile")
     st.markdown(
