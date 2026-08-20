@@ -569,6 +569,21 @@ def main() -> None:
         "Selectează o zi pentru a vedea evoluția producției solare și eoliene."
     )
 
+    with st.expander("Întrebările analizei", expanded=True):
+        st.markdown(
+            """
+            1. Care este ponderea orară a surselor regenerabile (eolian și
+               solar) în producția totală și cum se schimbă pe parcursul
+               zilei?
+            2. Cât din consum este acoperit orar de surse regenerabile
+               (eolian, solar și hidro)? În câte ore pe zi depășește 50%?
+            3. Cum arată profilul zilnic al solarului (clopot în jurul
+               prânzului) și cel al eolianului (neregulat)?
+            4. Cât de corelate sunt producția eoliană și cea solară? Se
+               compensează sau produc simultan?
+            """
+        )
+
     try:
         data = load_data(DATA_FILE)
     except FileNotFoundError:
