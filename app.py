@@ -11,6 +11,23 @@ from sen_dashboard.sections import (
 )
 
 
+def render_introduction() -> None:
+    """Introduce the dashboard and identify the source of its data."""
+    st.markdown(
+        """
+        Acest dashboard prezintă o analiză exploratorie a producției și a
+        consumului de energie electrică din România. Sunt urmărite contribuția
+        surselor regenerabile, acoperirea consumului și relația dintre
+        producția solară și cea eoliană.
+        """
+    )
+    st.caption(
+        "Sursa datelor: [Transelectrica · Grafic SEN]"
+        "(https://www.transelectrica.ro/widget/web/tel/sen-grafic/-/"
+        "SENGrafic_WAR_SENGraficportlet?display=IS)."
+    )
+
+
 # sidebar for selecting the date of analysis
 def render_sidebar(data):
     st.sidebar.header("Setări")
@@ -60,6 +77,7 @@ def main() -> None:
     st.title(
         "Analiză exploratorie (EDA) axată pe Graficul SEN al Transelectrica"
     )
+    render_introduction()
 
     # Render the analysis questions in a container
     render_analysis_questions()

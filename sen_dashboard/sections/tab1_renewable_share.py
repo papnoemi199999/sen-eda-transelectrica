@@ -259,10 +259,11 @@ def render_renewable_share(
 - La nivelul unei zile, producția solară este aproape zero în timpul
   nopții, crește după răsărit, atinge valorile cele mai ridicate în jurul
   prânzului și scade din nou spre seară.
-- Pe parcursul anului, ponderea producției solare prezintă o evoluție
-  sezonieră clară: crește din timpul primăverii spre vară și se reduce în
-  lunile de toamnă și de iarnă.
 - Producția eoliană variază puternic atât de la o oră la alta, cât și de la
   o zi la alta, fără o evoluție sezonieră la fel de clară precum cea a
-  producției solare."""
+  producției solare.
+  
+- Pe parcursul anului, ponderea producției solare prezintă o evoluție
+  sezonieră clară: crește din timpul primăverii spre vară și se reduce în
+  lunile de toamnă și de iarnă."""
         )

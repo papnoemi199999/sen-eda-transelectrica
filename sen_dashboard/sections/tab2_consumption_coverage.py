@@ -625,30 +625,6 @@ def render_consumption_coverage(
         daily_threshold_data,
         yearly_columns,
     )
-    st.altair_chart(
-        create_daily_hours_above_50_chart(daily_threshold_data),
-        use_container_width=True,
-    )
-    
-
-    st.markdown("**Ore peste 50% · total și pe anotimp**")
-    summary_columns = st.columns(5)
-    summary_columns[0].metric(
-        f"Total · {_data_year_label(data)}",
-        f"{annual_metrics['hours_above_50']:,} ore",
-    )
-    summary_columns[0].caption(
-        f"{annual_metrics['valid_percentage']:.1f}% din "
-        f"{annual_metrics['valid_hours']:,} ore valide."
-    )
-    for column, season in zip(summary_columns[1:], SEASON_ORDER):
-        column.metric(season, f"{seasonal_hours[season]:,} ore")
-
-    st.caption(
-        f"Ore valide analizate: {annual_metrics['valid_hours']:,} · "
-        f"{annual_metrics['valid_percentage']:.1f}% din orele valide "
-        "au depășit pragul."
-    )
 
     st.markdown(
         "**Evoluția anuală a producției și consumului · medii zilnice**"
@@ -677,12 +653,30 @@ def render_consumption_coverage(
         use_container_width=True,
     )
 
-    render_energy_totals(
-        calculate_energy_totals(annual_hourly_coverage),
-        f"Energie totală · {_data_year_label(data)}",
-        "GWh",
-        divisor=1_000,
+    st.altair_chart(
+        create_daily_hours_above_50_chart(daily_threshold_data),
+        use_container_width=True,
     )
+
+    st.markdown("**Ore peste 50% · total și pe anotimp**")
+    summary_columns = st.columns(5)
+    summary_columns[0].metric(
+        f"Total · {_data_year_label(data)}",
+        f"{annual_metrics['hours_above_50']:,} ore",
+    )
+    summary_columns[0].caption(
+        f"{annual_metrics['valid_percentage']:.1f}% din "
+        f"{annual_metrics['valid_hours']:,} ore valide."
+    )
+    for column, season in zip(summary_columns[1:], SEASON_ORDER):
+        column.metric(season, f"{seasonal_hours[season]:,} ore")
+
+    st.caption(
+        f"Ore valide analizate: {annual_metrics['valid_hours']:,} · "
+        f"{annual_metrics['valid_percentage']:.1f}% din orele valide "
+        "au depășit pragul."
+    )
+
 
     st.info(
         f"""**Concluzii:**
@@ -697,6 +691,14 @@ def render_consumption_coverage(
   {len(daily_threshold_data)} zile analizate, iar în
   {annual_insights['full_days_above_50']} zile pragul a fost depășit în
   toate cele 24 de ore.
+- Cea mai probabilă explicație pentru vârful hidro de la începutul lunii
+  decembrie este simplă: noiembrie 2025 a fost foarte ploios("luna noiembrie 2025 se clasează pe locul 4 în topul celor mai ploioase luni noiembrie din perioada 1961-2025"), astfel a ajuns
+  mai multă apă în
+  râuri și lacurile de acumulare. Cu mai multă apă disponibilă,
+  hidrocentralele au putut produce mai mult. În date, media zilnică hidro a
+  ajuns la aproape 3.000 MW pe 2 decembrie, apoi a scăzut treptat.
+  [Sursa datelor meteo: Administrația Națională de
+  Meteorologie](https://www.meteoromania.ro/clim/caracterizare-lunara/cc_2025_11.html).
 - **Primăvara**, producția hidro este ridicată, energia solară începe să
   crească, iar consumul este mai redus decât iarna. Din acest motiv, sursele
   regenerabile acoperă mai des peste 50% din consum. **Iarna**, zilele foarte
