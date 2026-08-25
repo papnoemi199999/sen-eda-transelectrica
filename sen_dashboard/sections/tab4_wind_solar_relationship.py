@@ -126,11 +126,7 @@ def render_wind_solar_relationship(
     daily_data: pd.DataFrame,
 ) -> None:
     """Render the answer to analysis question four."""
-    st.header("4. Relația dintre producția eoliană și cea solară")
-    st.subheader(
-        "Cât de corelate sunt producția eoliană și cea solară? "
-        "Se compensează sau produc simultan?"
-    )
+    st.header("4. Cât de corelate sunt producția eoliană și cea solară? Se compensează sau produc simultan?")
     st.write(
         "Corelația Pearson arată dacă cele două surse tind să crească și "
         "să scadă împreună. Valorile negative indică o tendință de "

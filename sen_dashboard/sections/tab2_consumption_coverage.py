@@ -219,12 +219,10 @@ def calculate_energy_totals(hourly_coverage: pd.DataFrame) -> dict[str, float]:
 
 def render_energy_totals(
     energy_totals: dict[str, float],
-    heading: str,
     unit: str,
     divisor: float = 1,
 ) -> None:
     """Render consumption and renewable generation totals in five columns."""
-    st.markdown(f"**{heading}**")
     columns = st.columns(5)
     metric_definitions = [
         ("Consum", "consumption"),
@@ -523,11 +521,7 @@ def render_consumption_coverage(
     data: pd.DataFrame,
     daily_data: pd.DataFrame,
 ) -> None:
-    st.header("2. Acoperirea consumului din surse regenerabile")
-    st.subheader(
-        "Cât din consum este acoperit orar de surse regenerabile "
-        "(eolian, solar și hidro) și în câte ore depășește 50%?"
-    )
+    st.header("2. Cât din consum este acoperit orar de surse regenerabile (eolian, solar și hidro) și în câte ore depășește 50%?")
 
     selected_daily_source = st.radio(
         "Sursa afișată pentru acoperirea orară",
@@ -569,10 +563,8 @@ def render_consumption_coverage(
         f"{metrics['hours_above_50']} / {metrics['valid_hours']}",
     )
 
-    selected_date_label = daily_data[DATE_COLUMN].iloc[0].strftime("%d.%m.%Y")
     render_energy_totals(
         calculate_energy_totals(hourly_coverage),
-        f"Energie în ziua selectată · {selected_date_label}",
         "MWh",
     )
 

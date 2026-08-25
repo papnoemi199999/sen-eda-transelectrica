@@ -12,8 +12,9 @@ from sen_dashboard.sections import (
 
 
 def render_introduction() -> None:
-    """Introduce the dashboard and identify the source of its data."""
-    st.markdown(
+    """Introduce the dashboard in the sidebar and identify its data source."""
+    st.sidebar.subheader("Despre dashboard")
+    st.sidebar.markdown(
         """
         Acest dashboard prezintă o analiză exploratorie a producției și a
         consumului de energie electrică din România. Sunt urmărite contribuția
@@ -21,7 +22,7 @@ def render_introduction() -> None:
         producția solară și cea eoliană.
         """
     )
-    st.caption(
+    st.sidebar.caption(
         "Sursa datelor: [Transelectrica · Grafic SEN]"
         "(https://www.transelectrica.ro/widget/web/tel/sen-grafic/-/"
         "SENGrafic_WAR_SENGraficportlet?display=IS)."

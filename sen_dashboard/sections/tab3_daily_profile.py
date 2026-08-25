@@ -104,12 +104,7 @@ def render_daily_profile(
     daily_data: pd.DataFrame,
     selected_date,
 ) -> None:
-    st.header("3. Profilul zilnic al producției")
-    st.subheader(
-        "Cum arată profilul zilnic al solarului (clopot în jurul prânzului) "
-        "și cel al eolianului (neregulat)?"
-    )
-
+    st.header("3. Cum arată profilul zilnic al solarului (clopot în jurul prânzului) și cel al eolianului (neregulat)?")
 
     metrics = calculate_daily_metrics(daily_data)
     metric_columns = st.columns(5)

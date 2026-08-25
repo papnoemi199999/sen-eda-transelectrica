@@ -207,10 +207,6 @@ def render_renewable_share(
             f"{selected_date:%d.%m.%Y}",
             f"{daily_share:.1f}%",
         )
-        st.caption(
-            f"Raportul dintre producția {selected_daily_share.lower()} și "
-            "producția totală din ziua selectată."
-        )
 
     st.divider()
 
@@ -237,17 +233,6 @@ def render_renewable_share(
     )
 
     if not yearly_daily_share.empty:
-        daily_series = yearly_daily_share[yearly_share_column]
-        minimum_index = daily_series.idxmin()
-        maximum_index = daily_series.idxmax()
-        st.caption(
-            f"Media zilnică: {daily_series.mean():.1f}% · "
-            f"Minim: {daily_series.loc[minimum_index]:.1f}% "
-            f"({yearly_daily_share.loc[minimum_index, DATE_COLUMN]:%d.%m.%Y}) · "
-            f"Maxim: {daily_series.loc[maximum_index]:.1f}% "
-            f"({yearly_daily_share.loc[maximum_index, DATE_COLUMN]:%d.%m.%Y})"
-        )
-
         combined_daily_series = yearly_daily_share[SHARE_COLUMN]
 
         st.info(
