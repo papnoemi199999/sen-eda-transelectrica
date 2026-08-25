@@ -123,7 +123,6 @@ def _format_correlation(value: float) -> str:
 
 def render_wind_solar_relationship(
     data: pd.DataFrame,
-    daily_data: pd.DataFrame,
 ) -> None:
     """Render the answer to analysis question four."""
     st.header("4. Cât de corelate sunt producția eoliană și cea solară? Se compensează sau produc simultan?")

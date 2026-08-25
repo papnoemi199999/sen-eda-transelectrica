@@ -33,20 +33,21 @@ def render_introduction() -> None:
     )
 
 
-# sidebar for selecting the date of analysis
-def render_sidebar(data):
-    st.sidebar.header("Setări")
+def render_date_selector(data, key: str):
+    """Render an independent date selector for a date-dependent chart."""
     min_date = data[DATE_COLUMN].dt.date.min()
     max_date = data[DATE_COLUMN].dt.date.max()
-    selected_date = st.sidebar.date_input(
-        "Data analizată",
+
+    selected_date = st.date_input(
+        "Selectează data",
         value=min_date,
         min_value=min_date,
         max_value=max_date,
-        label_visibility="collapsed",
+        key=key,
     )
-    st.sidebar.caption(
-        f"Perioada disponibilă: {min_date:%d.%m.%Y} – {max_date:%d.%m.%Y}"
+    st.caption(
+        "Perioada disponibilă: "
+        f"{min_date:%d.%m.%Y} – {max_date:%d.%m.%Y}"
     )
 
     return selected_date
@@ -99,15 +100,13 @@ def main() -> None:
         st.error("Fișierul nu conține măsurători valide.")
         st.stop()
 
-    # Render the sidebar for date selection and get the daily data
-    selected_date = render_sidebar(data)
-    daily_data = get_daily_data(data, selected_date)
-    if daily_data.empty:
+    # Render the overview with its own date selection.
+    overview_date = render_date_selector(data, "overview_date")
+    overview_daily_data = get_daily_data(data, overview_date)
+    if overview_daily_data.empty:
         st.warning("Nu există date pentru ziua selectată.")
-        st.stop()
-
-    # Render the energy overview section
-    render_energy_overview(data, daily_data)
+    else:
+        render_energy_overview(data, overview_daily_data)
 
     st.divider()
 
@@ -135,17 +134,36 @@ def main() -> None:
 
     # Render the content for each tab based on the selected question
     with question_tabs[0]:
-        render_renewable_share(data, daily_data, selected_date)
+        renewable_date = render_date_selector(data, "renewable_share_date")
+        renewable_daily_data = get_daily_data(data, renewable_date)
+        if renewable_daily_data.empty:
+            st.warning("Nu există date pentru ziua selectată.")
+        else:
+            render_renewable_share(
+                data,
+                renewable_daily_data,
+                renewable_date,
+            )
     with question_tabs[1]:
-        render_consumption_coverage(data, daily_data)
+        coverage_date = render_date_selector(data, "coverage_date")
+        coverage_daily_data = get_daily_data(data, coverage_date)
+        if coverage_daily_data.empty:
+            st.warning("Nu există date pentru ziua selectată.")
+        else:
+            render_consumption_coverage(data, coverage_daily_data)
     with question_tabs[2]:
-        render_daily_profile(
-            data,
-            daily_data,
-            selected_date,
-        )
+        profile_date = render_date_selector(data, "daily_profile_date")
+        profile_daily_data = get_daily_data(data, profile_date)
+        if profile_daily_data.empty:
+            st.warning("Nu există date pentru ziua selectată.")
+        else:
+            render_daily_profile(
+                data,
+                profile_daily_data,
+                profile_date,
+            )
     with question_tabs[3]:
-        render_wind_solar_relationship(data, daily_data)
+        render_wind_solar_relationship(data)
 
 
 if __name__ == "__main__":
