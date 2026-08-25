@@ -10,6 +10,10 @@ from sen_dashboard.sections import (
     render_wind_solar_relationship,
 )
 
+PAGE_TITLE = (
+    "Analiză exploratorie (EDA) axată pe Graficul SEN al Transelectrica"
+)
+
 
 def render_introduction() -> None:
     """Introduce the dashboard in the sidebar and identify its data source."""
@@ -71,13 +75,11 @@ def main() -> None:
 
     # Set up the Streamlit page configuration
     st.set_page_config(
-        page_title="EDA – Graficul SEN Transelectrica",
+        page_title=PAGE_TITLE,
         page_icon="⚡",
         layout="wide",
     )
-    st.title(
-        "Analiză exploratorie (EDA) axată pe Graficul SEN al Transelectrica"
-    )
+    st.title(PAGE_TITLE)
     render_introduction()
 
     # Render the analysis questions in a container
